@@ -4,6 +4,7 @@ const Usermodel=require("../models/User.cjs")
 const bcrypt=require("bcrypt")
 const jwt=require("jsonwebtoken")
 const authentication=require("../middleware/authentication.cjs")
+const upload =require("../middleware/multer.js")
 UserRouter.post("/signup",async(req,res)=>{
     try {
         const {username,email,password,role}=req.body
