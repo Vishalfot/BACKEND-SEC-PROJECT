@@ -1,4 +1,4 @@
-const mongoose=require("mongoose")
+import mongoose from "mongoose";
 const EventSchema=new mongoose.Schema({
     event_name:{
         type:String,
@@ -9,7 +9,7 @@ const EventSchema=new mongoose.Schema({
         required:true
     },
     date:{
-        type:Date,
+        type:String,
         required:true
     },
     time:{

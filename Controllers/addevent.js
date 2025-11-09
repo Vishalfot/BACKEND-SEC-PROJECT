@@ -1,18 +1,19 @@
 
-import {Event} from "../models/Event.cjs"
-import {uploadOnCloudinary} from "../utils/cloudnary.js"
+import {Event} from "../models/Event.js"
+import {uploadonCloudinary} from "../utils/cloudnary.js"
 
 const addevent=(async(req,res)=>{
     try {
         const {event_name,description,date,location,time,category}=req.body;
         const avatarlocalPath=req.file?.path;
     if(!avatarlocalPath){
-        res.status(400).json("image not fetch");
+       return res.status(400).json("image not fetch");
     }
-    const image=await uploadOnCloudinary(avatarlocalPath);
+    console.log("image fethed")
+    const image=await uploadonCloudinary(avatarlocalPath);
 
     if(!image){
-        res.status(400).json("Image file is required");
+        return res.status(400).json("Image file is required");
     }
     const newEvent=new Event({
         event_name,
@@ -52,7 +53,7 @@ const updateevent=(async(req,res)=>{
         }
         res.status(200).json(uevent)
     } catch (error) {
-        res.status(400).json("task updation failed")
+        res.status(400).json("event updation failed")
     }
 })
 
