@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-const EventSchema=new mongoose.Schema({
-    event_name:{
+const TouristplaceSchema=new mongoose.Schema({
+    tourist_place_name:{
         type:String,
         required:true,
     },
@@ -8,13 +8,11 @@ const EventSchema=new mongoose.Schema({
         type:String,
         required:true
     },
-    date:{
+    opening_time:{
         type:String,
-        required:true
     },
-    time:{
-        type:String,
-        required:true
+    closing_time:{
+        type:String
     },
     location:{
         type:String,
@@ -25,5 +23,5 @@ const EventSchema=new mongoose.Schema({
         required:true
     }
 })
-const Event=mongoose.model("Event",EventSchema);
-export {Event}
+const Touristplace=mongoose.model("Touristplace",TouristplaceSchema);
+export {Touristplace}

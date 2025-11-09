@@ -28,7 +28,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import eventRoutes from "./routes/Event.js";
-
+import touristRoutes from "./routes/Touristplace.js"
+import productRoutes from "./routes/Product.js"
+import UserRouter from "./routes/user.cjs";
 dotenv.config();
 const app = express();
 
@@ -38,8 +40,10 @@ app.use(cors({
 }));
 app.use(cookieParser());
 app.use(express.json());
-app.use("/auth", eventRoutes);
-
+app.use("/event", eventRoutes);
+app.use("/product",productRoutes);
+app.use("/tourist",touristRoutes);
+app.use("/auth",UserRouter);
 mongoose.connect(process.env.URI).then(() => {
     console.log("Connected to MongoDB");
 });

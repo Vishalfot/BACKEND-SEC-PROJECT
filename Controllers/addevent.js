@@ -4,7 +4,7 @@ import {uploadonCloudinary} from "../utils/cloudnary.js"
 
 const addevent=(async(req,res)=>{
     try {
-        const {event_name,description,date,location,time,category}=req.body;
+        const {event_name,description,date,location,time}=req.body;
         const avatarlocalPath=req.file?.path;
     if(!avatarlocalPath){
        return res.status(400).json("image not fetch");
@@ -21,8 +21,7 @@ const addevent=(async(req,res)=>{
         description,
         date,
         location,
-        time,
-        category
+        time
     })
     const savedevent=await newEvent.save()
     res.status(201).json(savedevent)
@@ -41,11 +40,11 @@ const getevent=(async(req,res)=>{
 })
 const updateevent=(async(req,res)=>{
     const {id}=req.params;
-    const{event_name,description,date,location,time,category,avatar}=req.body
+    const{event_name,description,date,location,time,avatar}=req.body
     try {
         const uevent=await Event.findByIdAndUpdate(
             id,
-            {event_name,description,date,location,time,category,avatar},
+            {event_name,description,date,location,time,avatar},
             {new:true}
         )
         if(!uevent){
