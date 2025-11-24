@@ -15,6 +15,11 @@ const ProductSchema=new mongoose.Schema({
     avatar:{
         type:String,
         required:true
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
     }
 })
 const Product=mongoose.model("Product",ProductSchema);

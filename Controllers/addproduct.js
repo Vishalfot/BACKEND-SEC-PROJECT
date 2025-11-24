@@ -4,6 +4,7 @@ import {uploadonCloudinary} from "../utils/cloudnary.js"
 
 const addproduct=(async(req,res)=>{
     try {
+        const userId = req.user.userId || req.user._id;
         const {product_name,description,price}=req.body;
         const avatarlocalPath=req.file?.path;
     if(!avatarlocalPath){
@@ -18,7 +19,8 @@ const addproduct=(async(req,res)=>{
         product_name,
         description,
         price,
-        avatar:product_image.url
+        avatar:product_image.url,
+        createdBy: userId
     })
     const savedproduct=await newProduct.save()
     res.status(201).json(savedproduct)
@@ -27,14 +29,7 @@ const addproduct=(async(req,res)=>{
     return res.status(500).json({error:"product listing failed"})
 }
 })
-const getproduct=(async(req,res)=>{
-    try{
-        const products=await Product.find();
-        res.status(200).json(products)
-    }catch(error){
-        res.status(400).json("poduct not able to fetch")
-    }
-})
+
 const updateproduct=(async(req,res)=>{
     const {id}=req.params;
     const{product_name,description,price,avatar}=req.body
@@ -47,7 +42,7 @@ const updateproduct=(async(req,res)=>{
         if(!uproduct){
             return res.status(400).json("product not found")
         }
-        res.status(200).json(uevent)
+        res.status(200).json(uproduct)
     } catch (error) {
         res.status(400).json("product updation failed")
     }
@@ -60,9 +55,36 @@ const deleteproduct=async(req,res)=>{
         if(!dproduct){
             return res.status(400).json("product not found")
         }
+        res.status(200).json({ message: "Product deleted successfully" });
     } catch (error) {
         res.status(400).json("product deletion failed")
     }
 }
+// 1. FOR TOURISTS (Dashboard) - Shows Everything
+const getAllProducts = async (req, res) => {
+    try {
+        // .find() without arguments returns EVERYTHING
+        // .populate('createdBy', 'username') is optional if you want to show who posted it
+        const events = await Product.find().populate('createdBy', 'username'); 
+        res.status(200).json(events);
+    } catch (error) {
+        res.status(500).json("Error fetching events");
+    }
+};
 
-export{addproduct,getproduct,updateproduct,deleteproduct}
+// 2. FOR LOCALS (My Dashboard) - Shows Only Theirs
+const getMyProducts = async (req, res) => {
+    try {
+        const userId = req.user.userId || req.user._id;
+        
+        // FILTER: Only find events where createdBy == userId
+        const myEvents = await Product.find({ createdBy: userId }); 
+        
+        res.status(200).json(myEvents);
+    } catch (error) {
+        res.status(500).json("Error fetching your events");
+    }
+};
+
+
+export{addproduct,getAllProducts, getMyProducts,updateproduct,deleteproduct}

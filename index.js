@@ -31,12 +31,18 @@ import eventRoutes from "./routes/Event.js";
 import touristRoutes from "./routes/Touristplace.js"
 import productRoutes from "./routes/Product.js"
 import UserRouter from "./routes/user.cjs";
+import BookingRoutes from "./routes/booking.js"
+import WeddingRoutes from "./routes/wedding.js"
+import weddingBookingRoutes from "./routes/weddingBooking.js";
+import profileRoutes from "./routes/profile.js";
+
 dotenv.config();
 const app = express();
 
 app.use(cors({
-    origin: "http://127.0.0.1:3000",
-    credentials: true
+    origin: ["http://127.0.0.1:3000","http://localhost:3000"],
+    credentials: true,
+    methods: ["GET", "POST","PUT","DELETE"],
 }));
 app.use(cookieParser());
 app.use(express.json());
@@ -44,6 +50,10 @@ app.use("/event", eventRoutes);
 app.use("/product",productRoutes);
 app.use("/tourist",touristRoutes);
 app.use("/auth",UserRouter);
+app.use("/booking",BookingRoutes);
+app.use("/wedding",WeddingRoutes);
+app.use("/wedding-booking",weddingBookingRoutes);
+app.use("/profile", profileRoutes);
 mongoose.connect(process.env.URI).then(() => {
     console.log("Connected to MongoDB");
 });

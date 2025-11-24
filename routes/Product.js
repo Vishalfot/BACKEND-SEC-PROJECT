@@ -1,11 +1,13 @@
 import express from "express"
 const router=express.Router()
 import { upload } from "../middleware/multer.js"
-import { addproduct,getproduct,updateproduct,deleteproduct } from "../Controllers/addproduct.js";
+import authentication from "../middleware/authentication.cjs";
+import { addproduct,updateproduct,deleteproduct, getAllProducts, getMyProducts } from "../Controllers/addproduct.js";
 
-router.post("/addproduct",upload.single("avatar"),addproduct);
-router.get("/",getproduct);
-router.put("/:id",updateproduct);
-router.delete("/:id",deleteproduct);
+router.post("/addproduct",authentication,upload.single("avatar"),addproduct);
+router.get("/all", getAllProducts);
+router.get("/myproducts", authentication, getMyProducts);
+router.put("/updateproduct/:id",updateproduct);
+router.delete("/deleteproduct/:id",deleteproduct);
 
 export default router;

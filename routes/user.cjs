@@ -4,7 +4,8 @@ const Usermodel=require("../models/User.cjs")
 const bcrypt=require("bcrypt")
 const jwt=require("jsonwebtoken")
 const authentication=require("../middleware/authentication.cjs")
-const upload =require("../middleware/multer.js")
+
+
 UserRouter.post("/signup",async(req,res)=>{
     try {
         const {username,email,password,role}=req.body
@@ -32,8 +33,13 @@ UserRouter.post("/login",async(req,res)=>{
     if(!ismatch){
         return res.status(400).json({status:false,message:"Incorrect password"})
     }
-    const token=jwt.sign({email:user.email},process.env.JWT_SECRET,{expiresIn:"4h"})
-    res.cookie("token",token)
+    const token=jwt.sign({email:user.email,userId:user._id,role:user.role},process.env.JWT_SECRET,{expiresIn:"4h"})
+    res.cookie("token",token,{
+        httpOnly:true,
+        secure:false,
+        sameSite:'Lax',
+        path:'/'
+    })
     res.status(200).json({status:true,message:"User logged in successfully",token,role:user.role})
     } catch (error) {
         console.log(error);
@@ -43,5 +49,8 @@ UserRouter.post("/login",async(req,res)=>{
 UserRouter.get("/logout",(req,res)=>{
     res.clearCookie("token")
     return res.json({status:true,message:"logged out"})
+})
+UserRouter.get("/dashboard",authentication,(req,res)=>{
+     res.json({message: "Welcome to the dashboard"})
 })
 module.exports=UserRouter;
