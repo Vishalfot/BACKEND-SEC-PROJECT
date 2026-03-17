@@ -30,12 +30,12 @@ import dotenv from "dotenv";
 import eventRoutes from "./routes/Event.js";
 import touristRoutes from "./routes/Touristplace.js"
 import productRoutes from "./routes/Product.js"
-import UserRouter from "./routes/user.cjs";
+import UserRouter from "./routes/user.js";
 import BookingRoutes from "./routes/booking.js"
 import WeddingRoutes from "./routes/wedding.js"
 import weddingBookingRoutes from "./routes/weddingBooking.js";
 import profileRoutes from "./routes/profile.js";
-
+import itineraryRoutes from './routes/itinerary.route.js';
 dotenv.config();
 const app = express();
 
@@ -54,6 +54,7 @@ app.use("/booking",BookingRoutes);
 app.use("/wedding",WeddingRoutes);
 app.use("/wedding-booking",weddingBookingRoutes);
 app.use("/profile", profileRoutes);
+app.use('/api/itinerary', itineraryRoutes);
 mongoose.connect(process.env.URI).then(() => {
     console.log("Connected to MongoDB");
 });

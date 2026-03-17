@@ -1,5 +1,5 @@
 import express from "express";
-import authentication from "../middleware/authentication.cjs";
+import authentication from "../middleware/authentication.js";
 import { bookVenue, getMyVenueBookings } from "../Controllers/weddingBooking.js";
 
 const router = express.Router();

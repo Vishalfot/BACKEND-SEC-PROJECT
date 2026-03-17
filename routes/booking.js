@@ -1,7 +1,7 @@
 import express from "express";
 
 import { addBooking, getUserBookings } from "../Controllers/booking.js"; 
-import authentication from "../middleware/authentication.cjs"; 
+import authentication from "../middleware/authentication.js"; 
 
 const router = express.Router();
 

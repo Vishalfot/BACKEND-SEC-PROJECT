@@ -1,7 +1,7 @@
 import express from "express"
 const router=express.Router();
 import {upload} from "../middleware/multer.js"
-import authentication from "../middleware/authentication.cjs";
+import authentication from "../middleware/authentication.js";
 import {addevent,getAllEvents, getMyEvents,updateevent,deleteevent} from "../Controllers/addevent.js"
 
 router.post("/addevent",authentication,upload.single("avatar"),addevent);

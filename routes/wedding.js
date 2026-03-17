@@ -1,7 +1,7 @@
 import express from "express"
 const router=express.Router()
 import { upload } from "../middleware/multer.js"
-import authentication from "../middleware/authentication.cjs";
+import authentication from "../middleware/authentication.js";
 import { addwedding,updateweddingdetails,deleteweddingdetails, getAllWeddings, getMyWeddings} from "../Controllers/wedding.js";
 
 router.post("/addwedding",authentication,upload.single("avatar"),addwedding);

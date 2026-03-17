@@ -1,5 +1,5 @@
 import express from "express";
-import authentication from "../middleware/authentication.cjs";
+import authentication from "../middleware/authentication.js";
 import { upload } from "../middleware/multer.js";
 import { getProfile, updateProfile } from "../Controllers/profile.js";
 
