@@ -123,7 +123,7 @@ export function calculateInterestMatch(item, userInterests = []) {
   return Math.min(normalized * 1.2, 1); 
 }
 export function checkTimeCompatibility(place, currentTime) {
-  const bestTimes = place.visit_info?.best_time_of_day || [];
+  const bestTimes = place.best_time_of_day || [];
 
   let timeOfDay;
   if (currentTime.hour >= 6 && currentTime.hour < 12) timeOfDay = "morning";
@@ -138,8 +138,8 @@ export function checkTimeCompatibility(place, currentTime) {
 }
 
 export function calculateAuthenticity(place) {
-  const cultural = place.scores?.cultural_score || 0;
-  const popularity = place.scores?.popularity_score || 0;
+  const cultural = place.scores?.cultural || 0;
+  const popularity = place.scores?.popularity || 0;
 
   return (cultural + (1 - popularity)) / 2;
 }
@@ -173,7 +173,7 @@ export async function scorePlace({
   score += interestMatch * 40;
 
   // 2️⃣ Cultural Score (0–20)
-  score += (item.scores?.cultural_score || 0) * 20;
+  score += (item.scores?.cultural || 0) * 20;
 
   // 3️⃣ Authenticity (0–10)
   score += calculateAuthenticity(item) * 10;
@@ -196,7 +196,7 @@ export async function scorePlace({
   if (item.type === "event") score += 15;
 
   // 8️⃣ Anchor Place Boost
-  if (item.special_features?.is_anchor_place) {
+  if (item.is_anchor_place) {
     score += 10;
   }
 

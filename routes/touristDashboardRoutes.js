@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
 // Dummy sample data - replace with actual DB queries
@@ -44,4 +44,4 @@ router.get('/bookings', (req, res) => res.json(sampleBookings));
 router.get('/wishlist', (req, res) => res.json(sampleWishlist));
 router.get('/community-posts', (req, res) => res.json(sampleCommunityPosts));
 
-module.exports = router;
+export default router;

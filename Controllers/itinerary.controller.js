@@ -1,8 +1,32 @@
 import Place from '../models/PlaceSchema.js';
-import { getDistanceMatrix, getRoutePath, nearestNeighborWith2Opt } from '../services/osrm.service.js';
+import { getDistanceMatrix, getRoutePath } from '../services/osrm.service.js';
 import { calculateCompositeScore } from '../utils/scoring.js';
-import { sliceIntoDays } from '../utils/daySlicer.js';
 import { composeDaysWithGemini } from '../services/llm.service.js';
+import { optimizeCustomRoute } from '../services/mode3.service.js';
+import { buildCityWideItinerary } from '../services/mode2.service.js';
+import {
+    getNearbyPlacesGeo
+} from '../services/mode1.service.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Load GeoJSON once at startup
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
+let _delhiboundaries = null;
+function getDelhiboundaries() {
+    if (!_delhiboundaries) {
+        try {
+            const raw = readFileSync(join(__dirname, '../data/delhi_area_boundaries.geojson'), 'utf8');
+            _delhiboundaries = JSON.parse(raw);
+        } catch (e) {
+            console.warn('[Mode1] Could not load GeoJSON boundaries:', e.message);
+            _delhiboundaries = { features: [] };
+        }
+    }
+    return _delhiboundaries;
+}
 
 export const getPlacesList = async (req, res) => {
     try {
@@ -15,113 +39,53 @@ export const getPlacesList = async (req, res) => {
 };
 
 // ──────────────────────────────────────────
-// MODE 1 — Nearby
+// MODE 1 — Nearby (Zone-first + Greedy + 2-opt)
 // ──────────────────────────────────────────
 export const getNearbyPlaces = async (req, res) => {
     try {
-        const { longitude, latitude, radiusKm = 5, limit = 5, tags = [] } = req.body;
+        const {
+            longitude,
+            latitude,
+            categories  = [],
+            budget      = 9999,
+            avoidCrowds = false
+        } = req.query; // often passed via query params for GET
+        
+        // Also support body if it's a POST
+        const lng = parseFloat(longitude || req.body.longitude);
+        const lat = parseFloat(latitude  || req.body.latitude);
+        const parseCategories = categories.length ? categories : (req.body.categories || []);
+        const parseBudget = budget !== 9999 ? parseInt(budget) : (parseInt(req.body.budget) || 9999);
+        const parseAvoid = avoidCrowds || req.body.avoidCrowds || false;
 
-        if (!longitude || !latitude) {
+        if (isNaN(lng) || isNaN(lat)) {
             return res.status(400).json({ success: false, message: 'longitude and latitude required' });
         }
 
-        const pipeline = [
-            {
-                $geoNear: {
-                    near: { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] },
-                    distanceField: 'dist.calculated',
-                    maxDistance: parseFloat(radiusKm) * 1000,
-                    spherical: true
-                }
-            }
-        ];
-
-        const places = await Place.aggregate(pipeline);
-
-        if (places.length === 0) {
-            return res.status(200).json({ success: true, data: [] });
-        }
-
-        const scoredPlaces = places.map(place => {
-            const score = calculateCompositeScore(place, tags, place.dist.calculated);
-            return { ...place, rankingScore: score };
+        const result = await getNearbyPlacesGeo({
+            lat,
+            lng,
+            categories: typeof parseCategories === 'string' ? parseCategories.split(',').map(c => c.trim()) : parseCategories,
+            budgetMax: parseBudget,
+            avoidCrowds: parseAvoid
         });
 
-        scoredPlaces.sort((a, b) => b.rankingScore - a.rankingScore);
-        const topPlaces = scoredPlaces.slice(0, parseInt(limit));
-
-        if (topPlaces.length === 0) {
-            return res.status(200).json({ success: true, data: [] });
-        }
-
-        const clustersMap = {};
-        topPlaces.forEach(p => {
-            const area = p.area || 'Nearby';
-            if (!clustersMap[area]) {
-                clustersMap[area] = { area, places: [] };
-            }
-            let notes = [];
-            if (p.amenities?.food_nearby) notes.push('Good lunch stop nearby');
-            if (p.amenities?.shopping_nearby) notes.push('Shopping available nearby');
-            if (notes.length > 0) p.contextual_note = notes.join(' & ');
-            clustersMap[area].places.push(p);
+        return res.status(200).json({
+            success: true,
+            ...result
         });
-
-        const finalClusters = [];
-        for (const cluster of Object.values(clustersMap)) {
-            if (cluster.places.length > 1) {
-                try {
-                    const coordsList = cluster.places.map(p => p.location.coordinates);
-                    const matrix = await getDistanceMatrix(coordsList, 'walking');
-                    const routeIndices = nearestNeighborWith2Opt(matrix, 0);
-                    const orderedPlaces = routeIndices.map(idx => cluster.places[idx]);
-
-                    orderedPlaces.forEach((p, routePos) => {
-                        let walkMin = 0;
-                        if (routePos < orderedPlaces.length - 1) {
-                            const fromIdx = routeIndices[routePos];
-                            const toIdx = routeIndices[routePos + 1];
-                            const durationSec = matrix[fromIdx][toIdx];
-                            if (durationSec) {
-                                walkMin = Math.ceil(durationSec / 60);
-                                p.walking_time_to_next = walkMin;
-                            }
-                        }
-                        const walkStr = walkMin > 0 ? `👉 ${walkMin} min walk to next. ` : '';
-                        const ctxNote = p.contextual_note ? `[${p.contextual_note}] ` : '';
-                        p.description = p.description || {};
-                        p.description.short = walkStr + ctxNote + (p.description.short || '');
-                        if (!p.description.short) p.description.short = '';
-                    });
-
-                    cluster.places = orderedPlaces;
-                } catch (err) {
-                    console.error(`OSRM walking error for cluster ${cluster.area}:`, err.message);
-                    cluster.places.forEach(p => {
-                        p.description = p.description || {};
-                        const ctxNote = p.contextual_note ? `[${p.contextual_note}] ` : '';
-                        p.description.short = ctxNote + (p.description.short || '');
-                    });
-                }
-            } else {
-                let p = cluster.places[0];
-                p.description = p.description || {};
-                const ctxNote = p.contextual_note ? `[${p.contextual_note}] ` : '';
-                p.description.short = ctxNote + (p.description.short || '');
-            }
-            finalClusters.push(cluster);
-        }
-
-        return res.status(200).json({ success: true, data: finalClusters });
     } catch (error) {
         console.error('Mode 1 Error:', error);
-        res.status(500).json({ success: false, error: 'Failed to fetch nearby places' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to fetch nearby places' });
     }
 };
 
+
 // ──────────────────────────────────────────
-// MODE 2 — City-Wide LLM
+// MODE 2 — City-Wide LLM (Corrected Pipeline)
 // ──────────────────────────────────────────
+
+
 
 /**
  * Maps pace string to max places per day
@@ -139,171 +103,52 @@ const ALWAYS_OPEN_VALUES = new Set(['all_days', 'event_based', 'seasonal', 'week
 function getTravelDayAbbrs(startDate, numDays) {
     const abbrs = new Set();
     for (let i = 0; i < numDays; i++) {
-        const d = new Date(startDate + 'T00:00:00');
+        // Use T12:00:00 (local noon) to avoid UTC midnight rolling back to the previous day in IST/timezones ahead of UTC
+        const d = new Date(startDate + 'T12:00:00');
         d.setDate(d.getDate() + i);
         abbrs.add(DAY_ABBR[d.getDay()]);
     }
-    // Always include weekday abbrs to match 'weekdays' entries
     return [...abbrs];
 }
 
 export const generateCityWideItinerary = async (req, res) => {
     try {
         const {
-            tags = [],
-            numDays = 3,
-            startDate,
-            pace = 'moderate',        // relaxed | moderate | packed
-            includeFood = true,
-            includeShopping = true
+            lat,
+            lng,
+            categories      = [],
+            num_days        = 3,
+            budget_max      = 9999,
+            trip_time       = 'morning',
+            avoid_crowds    = false,
+            day_of_week     = 'mon'
         } = req.body;
 
-        const maxPlacesPerDay = PACE_TO_MAX[pace] || 5;
-        const DAILY_BUDGET_MIN = 420; // 7 hours
-        const TRANSITION_BUFFER_MIN = 45;
-
-        // ── Phase 1: Candidate Selection ────────────────────────────────────
-        let query = {};
-        if (tags.length > 0) {
-            query.tags = { $in: tags.map(t => t.toLowerCase()) };
+        if (!lat || !lng) {
+            return res.status(400).json({ success: false, message: 'lat and lng are required' });
         }
 
-        // Pull a manageable pool — open_days filter may reduce this further
-        let allCandidates = await Place.find(query)
-            .sort({ 'scores.cultural_score': -1, 'scores.popularity_score': -1 })
-            .limit(30)
-            .lean();
+        const result = await buildCityWideItinerary({
+            lat: parseFloat(lat),
+            lng: parseFloat(lng),
+            categories,
+            numDays: parseInt(num_days),
+            budgetMax: parseInt(budget_max),
+            tripTime: trip_time,
+            avoidCrowds: avoid_crowds,
+            dayOfWeek: day_of_week
+        });
 
-        // Filter by open_days if startDate is provided
-        if (startDate) {
-            const travelDayAbbrs = getTravelDayAbbrs(startDate, numDays);
-            console.log(`[Mode2] Travel days (abbr): ${travelDayAbbrs.join(', ')}`);
-            allCandidates = allCandidates.filter(p => {
-                const openDays = p.visit_info?.open_days;
-                // No open_days info → treat as always open
-                if (!openDays || openDays.length === 0) return true;
-                // Special values → always open
-                if (openDays.some(d => ALWAYS_OPEN_VALUES.has(d.toLowerCase()))) return true;
-                // weekdays special case: mon-fri
-                if (openDays.includes('weekdays')) {
-                    return travelDayAbbrs.some(d => ['mon','tue','wed','thu','fri'].includes(d));
-                }
-                // Check if any travel day matches
-                return travelDayAbbrs.some(abbr => openDays.map(d => d.toLowerCase()).includes(abbr));
-            });
-            console.log(`[Mode2] Candidates after open_days filter: ${allCandidates.length}`);
-        }
-
-        // Limit to top 15 for LLM input (keeps prompt tiny → stays within free-tier quota)
-        const candidates = allCandidates.slice(0, 15);
-
-        if (candidates.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'No places found matching your interests and travel dates.'
-            });
-        }
-
-        // ── Phase 2: LLM Day Composition ────────────────────────────────────
-        const cacheParams = { tags, numDays, startDate, pace };
-        const rawDays = await composeDaysWithGemini(candidates, numDays, cacheParams);
-
-        // ── Phase 3: Within-Day Ordering + Budget Enforcement ───────────────
-        const itinerary = [];
-        for (let i = 0; i < rawDays.length; i++) {
-            const dayPlaceIds = rawDays[i];
-
-            // Safe _id comparison (PlaceSchema uses String _id)
-            let dayPlaces = dayPlaceIds
-                .map(id => candidates.find(c => String(c._id) === String(id)))
-                .filter(Boolean);
-
-            // Enforce max places per day based on pace
-            dayPlaces = dayPlaces.slice(0, maxPlacesPerDay);
-
-            if (dayPlaces.length === 0) continue;
-
-            // 420-min budget enforcement — drop lowest-scored place until under budget
-            const enforceBudget = (places) => {
-                let totalMin = places.reduce((sum, p) => sum + (p.visit_info?.avg_duration_min || 60), 0);
-                totalMin += (places.length - 1) * TRANSITION_BUFFER_MIN; // transition buffers
-                while (totalMin > DAILY_BUDGET_MIN && places.length > 1) {
-                    // Remove the place with the lowest cultural + popularity score
-                    let minIdx = 0;
-                    let minScore = Infinity;
-                    for (let j = 0; j < places.length; j++) {
-                        const score = (places[j].scores?.cultural_score || 0) + (places[j].scores?.popularity_score || 0);
-                        if (score < minScore) { minScore = score; minIdx = j; }
-                    }
-                    const dropped = places[minIdx];
-                    console.log(`[Mode2 Budget] Day ${i + 1}: dropping "${dropped.name}" to stay under 420 min`);
-                    places.splice(minIdx, 1);
-                    totalMin = places.reduce((sum, p) => sum + (p.visit_info?.avg_duration_min || 60), 0);
-                    totalMin += (places.length - 1) * TRANSITION_BUFFER_MIN;
-                }
-                return places;
-            };
-
-            dayPlaces = enforceBudget(dayPlaces);
-
-            // Route via OSRM if more than 1 place
-            if (dayPlaces.length > 1) {
-                try {
-                    const coords = dayPlaces.map(p => p.location.coordinates);
-                    const matrix = await getDistanceMatrix(coords, 'driving');
-                    const routeIndices = nearestNeighborWith2Opt(matrix, 0);
-                    dayPlaces = routeIndices.map(idx => dayPlaces[idx]);
-
-                    // Annotate travel times between stops
-                    dayPlaces.forEach((p, pos) => {
-                        if (pos < dayPlaces.length - 1) {
-                            const fromIdx = routeIndices[pos];
-                            const toIdx = routeIndices[pos + 1];
-                            const driveSec = matrix[fromIdx][toIdx];
-                            if (driveSec) {
-                                p.drive_time_to_next_min = Math.ceil(driveSec / 60);
-                            }
-                        }
-                    });
-                } catch (err) {
-                    console.warn(`[Mode2] OSRM routing failed for day ${i + 1}: ${err.message}. Using LLM order.`);
-                }
+        return res.status(200).json({ 
+            success: true, 
+            data: result.itinerary,
+            meta: {
+                num_days: result.num_days,
+                trip_time: result.trip_time,
+                categories: result.categories
             }
+        });
 
-            // ── Phase 4: Food & Shopping injection ──────────────────────────
-            let lunchTip = null;
-            let shoppingTip = null;
-
-            if (includeFood && dayPlaces.length > 2) {
-                const midStops = [dayPlaces[1], dayPlaces[2]].filter(Boolean);
-                const foodStop = midStops.find(p => p.amenities?.food_nearby);
-                if (foodStop) {
-                    lunchTip = `Lunch break — food available near ${foodStop.name}`;
-                }
-            }
-
-            if (includeShopping && dayPlaces.length > 2) {
-                const lateStops = dayPlaces.slice(Math.max(0, dayPlaces.length - 2));
-                const shopStop = lateStops.find(p => p.amenities?.shopping_nearby);
-                if (shopStop) {
-                    shoppingTip = `Shopping available near ${shopStop.name} in the late afternoon`;
-                }
-            }
-
-            itinerary.push({
-                day: i + 1,
-                date: startDate ? (() => {
-                    const d = new Date(startDate + 'T00:00:00');
-                    d.setDate(d.getDate() + i);
-                    return d.toISOString().split('T')[0];
-                })() : null,
-                lunchTip,
-                shoppingTip,
-                places: dayPlaces
-            });
-        }
-
-        return res.status(200).json({ success: true, data: itinerary });
     } catch (error) {
         console.error('Mode 2 Error:', error);
         res.status(500).json({ success: false, error: error.message || 'Failed to generate city-wide itinerary' });
@@ -311,58 +156,48 @@ export const generateCityWideItinerary = async (req, res) => {
 };
 
 // ──────────────────────────────────────────
-// MODE 3 — Route Optimization
+// MODE 3 — Route Optimization (Corrected Pipeline)
 // ──────────────────────────────────────────
-export const calculateOptimalRoute = async (req, res) => {
+export const buildCustomRoute = async (req, res) => {
     try {
-        const { selectedPlaceIds, startCoords = null } = req.body;
+        const {
+            selectedPlaces,   // array of place object or ids
+            place_ids,        // alternative
+            longitude,
+            latitude,
+            start_lat,        // alternative
+            start_lng,        // alternative
+            startTime = '09:00',
+            start_time        // alternative
+        } = req.body;
 
-        if (!selectedPlaceIds || selectedPlaceIds.length === 0) {
-            return res.status(400).json({ success: false, message: 'No places selected' });
+        const ids = place_ids || (selectedPlaces ? selectedPlaces.map(p => p._id || p) : []);
+        const sLat = parseFloat(start_lat || latitude);
+        const sLng = parseFloat(start_lng || longitude);
+        const sTime = start_time || startTime;
+
+        if (!ids || ids.length === 0) {
+            return res.status(400).json({ success: false, message: 'place_ids must be provided' });
+        }
+        if (isNaN(sLat) || isNaN(sLng)) {
+            return res.status(400).json({ success: false, message: 'start_lat and start_lng must be provided' });
         }
 
-        const places = await Place.find({ _id: { $in: selectedPlaceIds } }).lean();
-
-        if (places.length === 0) {
-            return res.status(404).json({ success: false, message: 'Places not found' });
-        }
-
-        let workablePlaces = [];
-        let startIndex = 0;
-
-        if (startCoords && startCoords.length === 2) {
-            workablePlaces.push({
-                _id: 'START_LOCATION',
-                name: 'Your Start Location',
-                location: { coordinates: startCoords },
-                visit_info: { avg_duration_min: 0 }
-            });
-        }
-
-        workablePlaces = [...workablePlaces, ...places];
-        const coordsList = workablePlaces.map(p => p.location.coordinates);
-
-        const matrix = await getDistanceMatrix(coordsList, 'driving');
-        const bestRouteIndices = nearestNeighborWith2Opt(matrix, startIndex);
-        const bestOrderedPlaces = bestRouteIndices.map(idx => workablePlaces[idx]);
-
-        const rawDays = sliceIntoDays(bestOrderedPlaces, matrix, 420);
-        const days = rawDays.map((placesArr, idx) => ({ day: idx + 1, places: placesArr }));
-
-        const orderedCoords = bestOrderedPlaces.map(p => p.location.coordinates);
-        let polylineData = null;
-        if (orderedCoords.length > 1) {
-            polylineData = await getRoutePath(orderedCoords, 'driving');
-        }
-
-        return res.status(200).json({
-            success: true,
-            days,
-            polyline: polylineData ? polylineData.geometry : null,
-            matrix
+        const result = await optimizeCustomRoute({
+            placeIds: ids,
+            startLat: sLat,
+            startLng: sLng,
+            startTime: sTime
         });
+
+        if (result.error) {
+            return res.status(400).json({ success: false, ...result });
+        }
+
+        return res.status(200).json({ success: true, ...result });
+
     } catch (error) {
         console.error('Mode 3 Error:', error);
-        res.status(500).json({ success: false, error: 'Failed to optimize route' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to generate custom route' });
     }
 };

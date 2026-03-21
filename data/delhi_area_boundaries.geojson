@@ -1,0 +1,173 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Old Delhi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.1900, 28.6450],
+          [77.2550, 28.6450],
+          [77.2550, 28.6700],
+          [77.1900, 28.6700],
+          [77.1900, 28.6450]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "New Delhi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.1800, 28.6050],
+          [77.2300, 28.6050],
+          [77.2300, 28.6450],
+          [77.1800, 28.6450],
+          [77.1800, 28.6050]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Central Delhi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.1900, 28.6300],
+          [77.2400, 28.6300],
+          [77.2400, 28.6650],
+          [77.1900, 28.6650],
+          [77.1900, 28.6300]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "South Delhi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.1600, 28.4800],
+          [77.3200, 28.4800],
+          [77.3200, 28.6050],
+          [77.1600, 28.6050],
+          [77.1600, 28.4800]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "East Delhi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.2700, 28.6000],
+          [77.3600, 28.6000],
+          [77.3600, 28.6800],
+          [77.2700, 28.6800],
+          [77.2700, 28.6000]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "West Delhi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.0300, 28.6000],
+          [77.1800, 28.6000],
+          [77.1800, 28.7100],
+          [77.0300, 28.7100],
+          [77.0300, 28.6000]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "North Delhi" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.1400, 28.6650],
+          [77.2700, 28.6650],
+          [77.2700, 28.7600],
+          [77.1400, 28.7600],
+          [77.1400, 28.6650]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Dwarka" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.9600, 28.5400],
+          [77.0800, 28.5400],
+          [77.0800, 28.6200],
+          [76.9600, 28.6200],
+          [76.9600, 28.5400]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Rohini" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.0400, 28.7100],
+          [77.1700, 28.7100],
+          [77.1700, 28.7900],
+          [77.0400, 28.7900],
+          [77.0400, 28.7100]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Noida" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.3000, 28.5100],
+          [77.4400, 28.5100],
+          [77.4400, 28.6300],
+          [77.3000, 28.6300],
+          [77.3000, 28.5100]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Gurgaon" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.0000, 28.4000],
+          [77.1600, 28.4000],
+          [77.1600, 28.5200],
+          [77.0000, 28.5200],
+          [77.0000, 28.4000]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Faridabad" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.2700, 28.3500],
+          [77.4000, 28.3500],
+          [77.4000, 28.4800],
+          [77.2700, 28.4800],
+          [77.2700, 28.3500]
+        ]]
+      }
+    }
+  ]
+}

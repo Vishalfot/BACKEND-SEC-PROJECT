@@ -1,5 +1,5 @@
 import express from 'express';
-import { getNearbyPlaces, generateCityWideItinerary, calculateOptimalRoute, getPlacesList } from '../Controllers/itinerary.controller.js';
+import { getNearbyPlaces, generateCityWideItinerary, buildCustomRoute, getPlacesList } from '../Controllers/itinerary.controller.js';
 import verifyToken from '../middleware/authentication.js';
 
 const router = express.Router();
@@ -26,6 +26,6 @@ router.post('/city-wide', verifyToken, generateCityWideItinerary);
  * MODE 3: User picks places -> best route
  * POST /api/itinerary/route
  */
-router.post('/route', verifyToken, calculateOptimalRoute);
+router.post('/route', verifyToken, buildCustomRoute);
 
 export default router;
