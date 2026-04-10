@@ -36,6 +36,8 @@ import WeddingRoutes from "./routes/wedding.js"
 import weddingBookingRoutes from "./routes/weddingBooking.js";
 import profileRoutes from "./routes/profile.js";
 import itineraryRoutes from './routes/itinerary.route.js';
+import './models/Cluster.js';
+import './models/AnchorEvent.js';
 dotenv.config();
 const app = express();
 
