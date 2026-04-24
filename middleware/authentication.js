@@ -27,6 +27,12 @@ import jwt from "jsonwebtoken";
 
 const authentication= async (req, res, next) => {
   try {
+    console.log("--------------------------------");
+    console.log("Auth Middleware Triggered");
+    console.log("Cookies:", req.cookies);
+    console.log("Auth Header:", req.headers.authorization);
+    console.log("--------------------------------");
+
     let token = req.cookies.token;
 
     if (!token && req.headers.authorization) {
@@ -39,11 +45,6 @@ const authentication= async (req, res, next) => {
         message: "Authentication failed"
       });
     }
-
-    console.log("--------------------------------");
-    console.log("Auth Middleware Triggered");
-    console.log("Token:", token);
-    console.log("--------------------------------");
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 

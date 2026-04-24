@@ -20,7 +20,8 @@ const ProductSchema=new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true
-    }
-})
+    },
+    verified: { type: Boolean, default: false }, rejected: { type: Boolean, default: false }
+}, { timestamps: true })
 const Product=mongoose.model("Product",ProductSchema);
 export {Product}

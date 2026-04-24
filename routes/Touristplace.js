@@ -1,11 +1,19 @@
 import express from "express"
 const router=express.Router()
 import { upload } from "../middleware/multer.js"
-import { addtouristplace,gettouristplace,updatetouristplace,deletetouristplace } from "../Controllers/addtouristplace.js";
+import authentication from "../middleware/authentication.js"
+import { 
+    addtouristplace, 
+    getAllTouristplaces, 
+    getMyTouristplaces, 
+    updatetouristplace, 
+    deletetouristplace 
+} from "../Controllers/addtouristplace.js";
 
-router.post("/addtouristplace",upload.single("avatar"),addtouristplace);
-router.get("/",gettouristplace);
-router.put("/:id",updatetouristplace);
-router.delete("/:id",deletetouristplace);
+router.post("/addtouristplace", authentication, upload.single("avatar"), addtouristplace);
+router.get("/all", getAllTouristplaces);
+router.get("/myplaces", authentication, getMyTouristplaces);
+router.put("/update/:id", authentication, updatetouristplace);
+router.delete("/delete/:id", authentication, deletetouristplace);
 
-export default router;
+export default router;

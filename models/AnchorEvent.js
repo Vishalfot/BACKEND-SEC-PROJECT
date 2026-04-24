@@ -1,8 +1,4 @@
-/**
- * models/AnchorEvent.js
- * Timed events from delhi_v5.xlsx → "AnchorEvents" sheet.
- * Re-import with: node scripts/importClusters.js
- */
+
 import mongoose from 'mongoose';
 
 const AnchorEventSchema = new mongoose.Schema({
@@ -14,6 +10,7 @@ const AnchorEventSchema = new mongoose.Schema({
   duration_min:    { type: Number, default: 60 },
   slot:            { type: String, enum: ['MORNING','AFTERNOON','EVENING','NIGHT'], default: 'EVENING' },
   season:          { type: String, default: '' },
+  active_months:   { type: [Number], default: [] },  // NEW: [] = year-round, [2] = Feb only, [9,10] = Sep-Oct
   priority_weight: { type: Number, min: 1, max: 10, default: 5 },
   notes:           { type: String, default: '' },
 }, { _id: false, timestamps: true });

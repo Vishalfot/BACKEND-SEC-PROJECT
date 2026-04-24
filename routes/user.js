@@ -1,99 +1,191 @@
+// // import express from "express";
+// // const UserRouter=express.Router()
+// // const Usermodel=require("../models/User.cjs")
+// // const bcrypt=require("bcrypt")
+// // const jwt=require("jsonwebtoken")
+// // const authentication=require("../middleware/authentication.js")
+
+
+// // UserRouter.post("/signup",async(req,res)=>{
+// //     try {
+// //         const {username,email,password,role}=req.body
+// //     const user =await Usermodel.findOne({email})
+// //     if(user){
+// //         return res.json({error:"User already exist"})
+// //     }
+// //     const hashpass=await bcrypt.hash(password,10)
+// //     const newuser=new Usermodel({username:username,email:email,password:hashpass,role:role})
+// //     await newuser.save()
+// //     res.status(201).json({status:true,message:"User created sucessfully"})
+// //     } catch (error) {
+// //         console.log(error);
+// //         res.status(500).json({status:false,message:"Sign-up failed"})
+// //     }
+// // })
+// // UserRouter.post("/login",async(req,res)=>{
+// //     try {
+// //         const {email,password}=req.body
+// //     const user=await Usermodel.findOne({email})
+// //     if(!user){
+// //         return res.status(400).json({status:false,message:"User does not exist "})
+// //     }
+// //     const ismatch=await bcrypt.compare(password,user.password)
+// //     if(!ismatch){
+// //         return res.status(400).json({status:false,message:"Incorrect password"})
+// //     }
+// //     const token=jwt.sign({email:user.email,userId:user._id,role:user.role},process.env.JWT_SECRET,{expiresIn:"4h"})
+// //     res.cookie("token",token,{
+// //         httpOnly:true,
+// //         secure:false,
+// //         sameSite:'Lax',
+// //         path:'/'
+// //     })
+// //     res.status(200).json({status:true,message:"User logged in successfully",token,role:user.role})
+// //     } catch (error) {
+// //         console.log(error);
+// //         res.status(500).json({status:false,message:"Log-in failed"})
+// //     }
+// // })
+// // UserRouter.get("/logout",(req,res)=>{
+// //     res.clearCookie("token")
+// //     return res.json({status:true,message:"logged out"})
+// // })
+// // UserRouter.get("/dashboard",authentication,(req,res)=>{
+// //      res.json({message: "Welcome to the dashboard"})
+// // })
+// // module.exports=UserRouter;
+
 // import express from "express";
-// const UserRouter=express.Router()
-// const Usermodel=require("../models/User.cjs")
-// const bcrypt=require("bcrypt")
-// const jwt=require("jsonwebtoken")
-// const authentication=require("../middleware/authentication.js")
+// import Usermodel from "../models/User.js"; // make sure model is also .js
+// import bcrypt from "bcrypt";
+// import jwt from "jsonwebtoken";
+// import  verifyToken  from "../middleware/authentication.js";
 
+// const UserRouter = express.Router();
 
-// UserRouter.post("/signup",async(req,res)=>{
-//     try {
-//         const {username,email,password,role}=req.body
-//     const user =await Usermodel.findOne({email})
-//     if(user){
-//         return res.json({error:"User already exist"})
+// UserRouter.post("/signup", async (req, res) => {
+//   try {
+//     const { username, email, password, role } = req.body;
+
+//     const user = await Usermodel.findOne({ email });
+//     if (user) {
+//       return res.json({ error: "User already exists" });
 //     }
-//     const hashpass=await bcrypt.hash(password,10)
-//     const newuser=new Usermodel({username:username,email:email,password:hashpass,role:role})
-//     await newuser.save()
-//     res.status(201).json({status:true,message:"User created sucessfully"})
-//     } catch (error) {
-//         console.log(error);
-//         res.status(500).json({status:false,message:"Sign-up failed"})
+
+//     const hashpass = await bcrypt.hash(password, 10);
+
+//     const newuser = new Usermodel({
+//       username,
+//       email,
+//       password: hashpass,
+//       role
+//     });
+
+//     await newuser.save();
+
+//     res.status(201).json({
+//       status: true,
+//       message: "User created successfully"
+//     });
+
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({
+//       status: false,
+//       message: "Sign-up failed"
+//     });
+//   }
+// });
+
+// UserRouter.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const user = await Usermodel.findOne({ email });
+//     if (!user) {
+//       return res.status(400).json({
+//         status: false,
+//         message: "User does not exist"
+//       });
 //     }
-// })
-// UserRouter.post("/login",async(req,res)=>{
-//     try {
-//         const {email,password}=req.body
-//     const user=await Usermodel.findOne({email})
-//     if(!user){
-//         return res.status(400).json({status:false,message:"User does not exist "})
+
+//     const ismatch = await bcrypt.compare(password, user.password);
+//     if (!ismatch) {
+//       return res.status(400).json({
+//         status: false,
+//         message: "Incorrect password"
+//       });
 //     }
-//     const ismatch=await bcrypt.compare(password,user.password)
-//     if(!ismatch){
-//         return res.status(400).json({status:false,message:"Incorrect password"})
-//     }
-//     const token=jwt.sign({email:user.email,userId:user._id,role:user.role},process.env.JWT_SECRET,{expiresIn:"4h"})
-//     res.cookie("token",token,{
-//         httpOnly:true,
-//         secure:false,
-//         sameSite:'Lax',
-//         path:'/'
-//     })
-//     res.status(200).json({status:true,message:"User logged in successfully",token,role:user.role})
-//     } catch (error) {
-//         console.log(error);
-//         res.status(500).json({status:false,message:"Log-in failed"})
-//     }
-// })
-// UserRouter.get("/logout",(req,res)=>{
-//     res.clearCookie("token")
-//     return res.json({status:true,message:"logged out"})
-// })
-// UserRouter.get("/dashboard",authentication,(req,res)=>{
-//      res.json({message: "Welcome to the dashboard"})
-// })
-// module.exports=UserRouter;
+
+//     const token = jwt.sign(
+//       {
+//         email: user.email,
+//         userId: user._id,
+//         role: user.role
+//       },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "4h" }
+//     );
+
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: false,
+//       sameSite: "Lax",
+//       path: "/"
+//     });
+
+//     res.status(200).json({
+//       status: true,
+//       message: "User logged in successfully",
+//       role: user.role
+//       // token intentionally omitted — sent via httpOnly cookie only
+//     });
+
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({
+//       status: false,
+//       message: "Log-in failed"
+//     });
+//   }
+// });
+
+// UserRouter.get("/logout", (req, res) => {
+//   res.clearCookie("token");
+//   return res.json({
+//     status: true,
+//     message: "Logged out"
+//   });
+// });
+
+// UserRouter.get("/dashboard", verifyToken, (req, res) => {
+//   res.json({ message: "Welcome to the dashboard" });
+// });
+
+// export default UserRouter;
 
 import express from "express";
-import Usermodel from "../models/User.js"; // make sure model is also .js
+import Usermodel from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import  verifyToken  from "../middleware/authentication.js";
+import verifyToken from "../middleware/authentication.js";
 
 const UserRouter = express.Router();
 
 UserRouter.post("/signup", async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
-
     const user = await Usermodel.findOne({ email });
-    if (user) {
-      return res.json({ error: "User already exists" });
-    }
+    if (user) return res.json({ error: "User already exists" });
 
     const hashpass = await bcrypt.hash(password, 10);
-
-    const newuser = new Usermodel({
-      username,
-      email,
-      password: hashpass,
-      role
-    });
-
+    const newuser = new Usermodel({ username, email, password: hashpass, role });
     await newuser.save();
 
-    res.status(201).json({
-      status: true,
-      message: "User created successfully"
-    });
-
+    res.status(201).json({ status: true, message: "User created successfully" });
   } catch (error) {
     console.log(error);
-    res.status(500).json({
-      status: false,
-      message: "Sign-up failed"
-    });
+    res.status(500).json({ status: false, message: "Sign-up failed" });
   }
 });
 
@@ -103,59 +195,44 @@ UserRouter.post("/login", async (req, res) => {
 
     const user = await Usermodel.findOne({ email });
     if (!user) {
-      return res.status(400).json({
-        status: false,
-        message: "User does not exist"
-      });
+      return res.status(400).json({ status: false, message: "User does not exist" });
     }
 
     const ismatch = await bcrypt.compare(password, user.password);
     if (!ismatch) {
-      return res.status(400).json({
-        status: false,
-        message: "Incorrect password"
-      });
+      return res.status(400).json({ status: false, message: "Incorrect password" });
     }
 
     const token = jwt.sign(
-      {
-        email: user.email,
-        userId: user._id,
-        role: user.role
-      },
+      { email: user.email, userId: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "4h" }
     );
 
+    // Set httpOnly cookie (works when same-origin)
     res.cookie("token", token, {
       httpOnly: true,
       secure: false,
       sameSite: "Lax",
-      path: "/"
+      path: "/",
     });
 
     res.status(200).json({
       status: true,
       message: "User logged in successfully",
-      token,
-      role: user.role
+      role: user.role,
+      token, // ← NOW echoed in body so frontend can store in localStorage
+      //   and send as Authorization: Bearer <token> header
     });
-
   } catch (error) {
     console.log(error);
-    res.status(500).json({
-      status: false,
-      message: "Log-in failed"
-    });
+    res.status(500).json({ status: false, message: "Log-in failed" });
   }
 });
 
 UserRouter.get("/logout", (req, res) => {
   res.clearCookie("token");
-  return res.json({
-    status: true,
-    message: "Logged out"
-  });
+  return res.json({ status: true, message: "Logged out" });
 });
 
 UserRouter.get("/dashboard", verifyToken, (req, res) => {

@@ -7,7 +7,7 @@ import { addproduct,updateproduct,deleteproduct, getAllProducts, getMyProducts }
 router.post("/addproduct",authentication,upload.single("avatar"),addproduct);
 router.get("/all", getAllProducts);
 router.get("/myproducts", authentication, getMyProducts);
-router.put("/updateproduct/:id",updateproduct);
-router.delete("/deleteproduct/:id",deleteproduct);
+router.put("/updateproduct/:id", authentication, updateproduct);
+router.delete("/deleteproduct/:id", authentication, deleteproduct);
 
-export default router;
+export default router;

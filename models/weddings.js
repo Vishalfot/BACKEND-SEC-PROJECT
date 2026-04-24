@@ -205,10 +205,11 @@ const WeddingSchema = new mongoose.Schema({
     }
   ],
   
-  verified: {
-    type: Boolean,
-    default: true
-  }
+  verified: { type: Boolean, default: false }, rejected: { type: Boolean, default: false },
+  license_url: {
+    type: String,
+    required: true 
+  },
 }, { timestamps: true });
 
 WeddingSchema.index({ location: "2dsphere" });

@@ -140,10 +140,8 @@ const EventSchema = new mongoose.Schema({
     required: true
   },
   
-  // LINK TO PLACE
-  place_ref: {
-    type: String,  // Matches Place._id
-    ref: "Place",
+  address: {
+    type: String,
     required: true
   },
   
@@ -187,7 +185,7 @@ const EventSchema = new mongoose.Schema({
     enum: ["festival", "local_experience", "workshop", "heritage_walk"],
     required: true
   },
-  
+
   tags: [String],
   
   price: {
@@ -208,9 +206,10 @@ const EventSchema = new mongoose.Schema({
     required: true
   },
   
-  verified: {
-    type: Boolean,
-    default: true
+  verified: { type: Boolean, default: false }, rejected: { type: Boolean, default: false },
+  license_url: {
+    type: String,
+    required: true
   }
 }, { timestamps: true });
 

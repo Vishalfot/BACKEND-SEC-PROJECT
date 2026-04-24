@@ -513,7 +513,7 @@
 
 import Place from "../models/PlaceSchema.js";
 import Event from "../models/Event.js";
-import Weddingplace from "../models/weddings.js";
+
 import { getOSRMRoute } from "./osrm.service.js";
 import { scorePlace } from "./scoring.service.js";
 

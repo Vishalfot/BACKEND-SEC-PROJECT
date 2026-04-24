@@ -22,6 +22,51 @@
 //     console.log("listening to port 2000")
 // })
 
+// import express from "express";
+// import mongoose from "mongoose";
+// import cookieParser from "cookie-parser";
+// import cors from "cors";
+// import dotenv from "dotenv";
+// import eventRoutes from "./routes/Event.js";
+// import touristRoutes from "./routes/Touristplace.js"
+// import productRoutes from "./routes/Product.js"
+// import UserRouter from "./routes/user.js";
+// import BookingRoutes from "./routes/booking.js"
+// import WeddingRoutes from "./routes/wedding.js"
+// import weddingBookingRoutes from "./routes/weddingBooking.js";
+// import profileRoutes from "./routes/profile.js";
+// import itineraryRoutes from './routes/itinerary.route.js';
+// import adminRoutes from "./routes/admin.js";
+// import './models/Cluster.js';
+// import './models/AnchorEvent.js';
+// dotenv.config();
+// const app = express();
+
+// app.use(cors({
+//     origin: ["http://127.0.0.1:3002", "http://localhost:3002"],
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+// }));
+// app.use(cookieParser());
+// app.use(express.json());
+// app.use("/admin", adminRoutes);
+// app.use("/event", eventRoutes);
+// app.use("/product", productRoutes);
+// app.use("/tourist", touristRoutes);
+// app.use("/auth", UserRouter);
+// app.use("/booking", BookingRoutes);
+// app.use("/wedding", WeddingRoutes);
+// app.use("/wedding-booking", weddingBookingRoutes);
+// app.use("/profile", profileRoutes);
+// app.use('/api/itinerary', itineraryRoutes);
+// mongoose.connect(process.env.URI).then(() => {
+//     console.log("Connected to MongoDB");
+// });
+
+// app.listen(process.env.PORT, () => {
+//     console.log(`Listening on port ${process.env.PORT}`);
+// });
+
 import express from "express";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
@@ -36,27 +81,34 @@ import WeddingRoutes from "./routes/wedding.js"
 import weddingBookingRoutes from "./routes/weddingBooking.js";
 import profileRoutes from "./routes/profile.js";
 import itineraryRoutes from './routes/itinerary.route.js';
-import './models/Cluster.js';
-import './models/AnchorEvent.js';
+import adminRoutes from "./routes/admin.js";
 dotenv.config();
 const app = express();
 
 app.use(cors({
-    origin: ["http://127.0.0.1:3000","http://localhost:3000"],
+    // Accept any localhost / 127.0.0.1 port so Live Server, Vite,
+    // and direct file serving all work without listing every port
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true); // Postman / curl
+        const ok = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        if (ok) return callback(null, true);
+        callback(new Error("CORS blocked: " + origin));
+    },
     credentials: true,
-    methods: ["GET", "POST","PUT","DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
 }));
 app.use(cookieParser());
 app.use(express.json());
 app.use("/event", eventRoutes);
-app.use("/product",productRoutes);
-app.use("/tourist",touristRoutes);
-app.use("/auth",UserRouter);
-app.use("/booking",BookingRoutes);
-app.use("/wedding",WeddingRoutes);
-app.use("/wedding-booking",weddingBookingRoutes);
+app.use("/product", productRoutes);
+app.use("/tourist", touristRoutes);
+app.use("/auth", UserRouter);
+app.use("/booking", BookingRoutes);
+app.use("/wedding", WeddingRoutes);
+app.use("/wedding-booking", weddingBookingRoutes);
 app.use("/profile", profileRoutes);
 app.use('/api/itinerary', itineraryRoutes);
+app.use("/admin", adminRoutes);
 mongoose.connect(process.env.URI).then(() => {
     console.log("Connected to MongoDB");
 });

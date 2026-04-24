@@ -120,22 +120,30 @@
 
 // Controllers/addevent.js - REPLACE YOUR CURRENT FILE WITH THIS
 import Event from "../models/Event.js";
-import Place from "../models/PlaceSchema.js";
+import { Profile } from "../models/Profile_temp.js";
 import { uploadonCloudinary } from "../utils/cloudnary.js";
 
 const addevent = async (req, res) => {
   try {
     const userId = req.user.userId || req.user._id;
+
+    // ✅ BUG FIXED: Moved Gatekeeper INSIDE the function where userId and res exist!
+    const userProfile = await Profile.findOne({ user: userId });
+    if (!userProfile || userProfile.verification_status !== "approved") {
+        return res.status(403).json({ 
+            error: "You cannot add events until your Local Profile is verified by an admin." 
+        });
+    }
     
-    // ✅ EXTRACT ALL REQUIRED FIELDS
+    // EXTRACT ALL REQUIRED FIELDS
     const {
       event_name,
-      description,          // String, not ObjectId
-      place_ref,            // Place ID
-      experience_type,      // festival, workshop, etc.
-      event_date,           // Date
-      start_time,           // "18:00"
-      end_time,             // "21:00"
+      description,          
+      address,            
+      experience_type,      
+      event_date,           
+      start_time,           
+      end_time,             
       latitude,
       longitude,
       tags,
@@ -144,43 +152,42 @@ const addevent = async (req, res) => {
     } = req.body;
 
     // Validate
-    if (!event_name || !description || !place_ref || !event_date || !start_time || !end_time) {
+    if (!event_name || !description || !address || !event_date || !start_time || !end_time) {
       return res.status(400).json({ 
-        error: "Missing required: event_name, description, place_ref, event_date, start_time, end_time" 
+        error: "Missing required: event_name, description, address, event_date, start_time, end_time" 
       });
     }
 
-    // Validate place exists
-    const placeExists = await Place.findById(place_ref);
-    if (!placeExists) {
-      return res.status(400).json({ error: "Invalid place_ref" });
+    if (!latitude || !longitude) {
+      return res.status(400).json({ error: "Missing coordinates: Please pin location on map" });
     }
 
     // Image upload
-    const avatarlocalPath = req.file?.path;
-    if (!avatarlocalPath) {
-      return res.status(400).json({ error: "Image required" });
+    const avatarlocalPath = req.files?.avatar?.[0]?.path;
+    const licenseLocalPath = req.files?.license?.[0]?.path;
+    
+    if (!avatarlocalPath || !licenseLocalPath) {
+      return res.status(400).json({ error: "Both an Image and a License/Permit are required" });
     }
 
     const image = await uploadonCloudinary(avatarlocalPath);
-    if (!image) {
-      return res.status(400).json({ error: "Image upload failed" });
+    const licenseDoc = await uploadonCloudinary(licenseLocalPath);
+    
+    if (!image || !licenseDoc) {
+      return res.status(400).json({ error: "Files upload failed" });
     }
 
     // Parse tags
     const tagArray = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : (tags || []);
 
-    // Use coordinates from place OR from request
-    const coords = [
-      parseFloat(longitude || placeExists.location.coordinates[0]),
-      parseFloat(latitude || placeExists.location.coordinates[1])
-    ];
+    // Use coordinates from request directly
+    const coords = [parseFloat(longitude), parseFloat(latitude)];
 
     // Create event
     const newEvent = new Event({
       event_name,
-      description,  // String value
-      place_ref,
+      description,  
+      address,
       experience_type: experience_type || "local_experience",
       event_date: new Date(event_date),
       start_time,
@@ -190,18 +197,19 @@ const addevent = async (req, res) => {
         coordinates: coords
       },
       avatar: image.secure_url,
+      license_url: licenseDoc.secure_url,
       tags: tagArray,
       price: parseFloat(price) || 0,
       capacity: parseInt(capacity) || null,
       createdBy: userId,
-      verified: false  // Admin will verify
+      verified: false  
     });
 
     const savedEvent = await newEvent.save();
     
     res.status(201).json({
       status: true,
-      message: "Event created successfully",
+      message: "Event Submitted successfully. Awaiting Admin Verification",
       event: savedEvent
     });
 
@@ -216,10 +224,15 @@ const addevent = async (req, res) => {
 
 const updateevent = async (req, res) => {
   const { id } = req.params;
+  const userId = req.user.userId || req.user._id;
   try {
     const existingEvent = await Event.findById(id);
     if (!existingEvent) {
       return res.status(404).json({ error: "Event not found" });
+    }
+    // ✅ Ownership check
+    if (existingEvent.createdBy.toString() !== userId.toString()) {
+      return res.status(403).json({ error: "You are not authorized to update this event" });
     }
 
     const updatedData = {
@@ -243,11 +256,17 @@ const updateevent = async (req, res) => {
 
 const deleteevent = async (req, res) => {
   const { id } = req.params;
+  const userId = req.user.userId || req.user._id;
   try {
-    const deleted = await Event.findByIdAndDelete(id);
-    if (!deleted) {
+    const existing = await Event.findById(id);
+    if (!existing) {
       return res.status(404).json({ error: "Event not found" });
     }
+    // ✅ Ownership check
+    if (existing.createdBy.toString() !== userId.toString()) {
+      return res.status(403).json({ error: "You are not authorized to delete this event" });
+    }
+    await Event.findByIdAndDelete(id);
     res.status(200).json({ message: "Event deleted" });
   } catch (error) {
     res.status(500).json({ error: "Delete failed" });
@@ -257,9 +276,8 @@ const deleteevent = async (req, res) => {
 // FOR TOURISTS - All verified events
 const getAllEvents = async (req, res) => {
   try {
-    const events = await Event.find()
-      .populate('createdBy', 'username')
-      .populate('place_ref', 'name area');
+    const events = await Event.find({verified:true})
+      .populate('createdBy', 'username');
       
     res.status(200).json(events);
   } catch (error) {
@@ -271,8 +289,7 @@ const getAllEvents = async (req, res) => {
 const getMyEvents = async (req, res) => {
   try {
     const userId = req.user.userId || req.user._id;
-    const myEvents = await Event.find({ createdBy: userId })
-      .populate('place_ref', 'name area');
+    const myEvents = await Event.find({ createdBy: userId });
       
     res.status(200).json(myEvents);
   } catch (error) {

@@ -21,7 +21,13 @@ const TouristplaceSchema=new mongoose.Schema({
     avatar:{
         type:String,
         required:true
-    }
-})
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+     verified: { type: Boolean, default: false }, rejected: { type: Boolean, default: false }
+}, { timestamps: true })
 const Touristplace=mongoose.model("Touristplace",TouristplaceSchema);
 export {Touristplace}
