@@ -1,207 +1,53 @@
-// // import express from "express";
-// // const UserRouter=express.Router()
-// // const Usermodel=require("../models/User.cjs")
-// // const bcrypt=require("bcrypt")
-// // const jwt=require("jsonwebtoken")
-// // const authentication=require("../middleware/authentication.js")
-
-
-// // UserRouter.post("/signup",async(req,res)=>{
-// //     try {
-// //         const {username,email,password,role}=req.body
-// //     const user =await Usermodel.findOne({email})
-// //     if(user){
-// //         return res.json({error:"User already exist"})
-// //     }
-// //     const hashpass=await bcrypt.hash(password,10)
-// //     const newuser=new Usermodel({username:username,email:email,password:hashpass,role:role})
-// //     await newuser.save()
-// //     res.status(201).json({status:true,message:"User created sucessfully"})
-// //     } catch (error) {
-// //         console.log(error);
-// //         res.status(500).json({status:false,message:"Sign-up failed"})
-// //     }
-// // })
-// // UserRouter.post("/login",async(req,res)=>{
-// //     try {
-// //         const {email,password}=req.body
-// //     const user=await Usermodel.findOne({email})
-// //     if(!user){
-// //         return res.status(400).json({status:false,message:"User does not exist "})
-// //     }
-// //     const ismatch=await bcrypt.compare(password,user.password)
-// //     if(!ismatch){
-// //         return res.status(400).json({status:false,message:"Incorrect password"})
-// //     }
-// //     const token=jwt.sign({email:user.email,userId:user._id,role:user.role},process.env.JWT_SECRET,{expiresIn:"4h"})
-// //     res.cookie("token",token,{
-// //         httpOnly:true,
-// //         secure:false,
-// //         sameSite:'Lax',
-// //         path:'/'
-// //     })
-// //     res.status(200).json({status:true,message:"User logged in successfully",token,role:user.role})
-// //     } catch (error) {
-// //         console.log(error);
-// //         res.status(500).json({status:false,message:"Log-in failed"})
-// //     }
-// // })
-// // UserRouter.get("/logout",(req,res)=>{
-// //     res.clearCookie("token")
-// //     return res.json({status:true,message:"logged out"})
-// // })
-// // UserRouter.get("/dashboard",authentication,(req,res)=>{
-// //      res.json({message: "Welcome to the dashboard"})
-// // })
-// // module.exports=UserRouter;
-
-// import express from "express";
-// import Usermodel from "../models/User.js"; // make sure model is also .js
-// import bcrypt from "bcrypt";
-// import jwt from "jsonwebtoken";
-// import  verifyToken  from "../middleware/authentication.js";
-
-// const UserRouter = express.Router();
-
-// UserRouter.post("/signup", async (req, res) => {
-//   try {
-//     const { username, email, password, role } = req.body;
-
-//     const user = await Usermodel.findOne({ email });
-//     if (user) {
-//       return res.json({ error: "User already exists" });
-//     }
-
-//     const hashpass = await bcrypt.hash(password, 10);
-
-//     const newuser = new Usermodel({
-//       username,
-//       email,
-//       password: hashpass,
-//       role
-//     });
-
-//     await newuser.save();
-
-//     res.status(201).json({
-//       status: true,
-//       message: "User created successfully"
-//     });
-
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({
-//       status: false,
-//       message: "Sign-up failed"
-//     });
-//   }
-// });
-
-// UserRouter.post("/login", async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     const user = await Usermodel.findOne({ email });
-//     if (!user) {
-//       return res.status(400).json({
-//         status: false,
-//         message: "User does not exist"
-//       });
-//     }
-
-//     const ismatch = await bcrypt.compare(password, user.password);
-//     if (!ismatch) {
-//       return res.status(400).json({
-//         status: false,
-//         message: "Incorrect password"
-//       });
-//     }
-
-//     const token = jwt.sign(
-//       {
-//         email: user.email,
-//         userId: user._id,
-//         role: user.role
-//       },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "4h" }
-//     );
-
-//     res.cookie("token", token, {
-//       httpOnly: true,
-//       secure: false,
-//       sameSite: "Lax",
-//       path: "/"
-//     });
-
-//     res.status(200).json({
-//       status: true,
-//       message: "User logged in successfully",
-//       role: user.role
-//       // token intentionally omitted — sent via httpOnly cookie only
-//     });
-
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({
-//       status: false,
-//       message: "Log-in failed"
-//     });
-//   }
-// });
-
-// UserRouter.get("/logout", (req, res) => {
-//   res.clearCookie("token");
-//   return res.json({
-//     status: true,
-//     message: "Logged out"
-//   });
-// });
-
-// UserRouter.get("/dashboard", verifyToken, (req, res) => {
-//   res.json({ message: "Welcome to the dashboard" });
-// });
-
-// export default UserRouter;
-
 import express from "express";
 import Usermodel from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import verifyToken from "../middleware/authentication.js";
+import authentication from "../middleware/authentication.js";
 
 const UserRouter = express.Router();
 
+// --- SIGN UP ---
 UserRouter.post("/signup", async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
-    const user = await Usermodel.findOne({ email });
-    if (user) return res.json({ error: "User already exists" });
 
+    // 1. Check if user exists
+    const userExists = await Usermodel.findOne({ email });
+    if (userExists) return res.status(400).json({ error: "User already exists" });
+
+    // 2. Hash Password
     const hashpass = await bcrypt.hash(password, 10);
-    const newuser = new Usermodel({ username, email, password: hashpass, role });
+
+    // 3. Create New User with Welcome Coins
+    const newuser = new Usermodel({
+      username,
+      email,
+      password: hashpass,
+      role,
+      coins: 100 // ✅ Direct assignment of Welcome Coins (e.g., ₹10 value)
+    });
+
     await newuser.save();
 
-    res.status(201).json({ status: true, message: "User created successfully" });
+    res.status(201).json({
+      status: true,
+      message: "Account created successfully! 100 Welcome Coins added to your wallet."
+    });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ status: false, message: "Sign-up failed" });
   }
 });
-
+// --- LOGIN ---
 UserRouter.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const user = await Usermodel.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ status: false, message: "User does not exist" });
-    }
+
+    if (!user) return res.status(400).json({ status: false, message: "User does not exist" });
 
     const ismatch = await bcrypt.compare(password, user.password);
-    if (!ismatch) {
-      return res.status(400).json({ status: false, message: "Incorrect password" });
-    }
+    if (!ismatch) return res.status(400).json({ status: false, message: "Incorrect password" });
 
     const token = jwt.sign(
       { email: user.email, userId: user._id, role: user.role },
@@ -209,34 +55,44 @@ UserRouter.post("/login", async (req, res) => {
       { expiresIn: "4h" }
     );
 
-    // Set httpOnly cookie (works when same-origin)
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "Lax",
       path: "/",
     });
 
     res.status(200).json({
       status: true,
-      message: "User logged in successfully",
-      role: user.role,
-      token, // ← NOW echoed in body so frontend can store in localStorage
-      //   and send as Authorization: Bearer <token> header
+      message: "Logged in successfully",
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        coins: user.coins, // ✅ Frontend can now show coins in Navbar
+        avatar: user.avatar
+      }
     });
   } catch (error) {
-    console.log(error);
     res.status(500).json({ status: false, message: "Log-in failed" });
+  }
+});
+
+// --- GET ME (Verification Route) ---
+// Useful for the frontend to check if the session is still valid
+UserRouter.get("/me", authentication, async (req, res) => {
+  try {
+    const user = await Usermodel.findById(req.user.userId).select("-password");
+    res.json({ status: true, user });
+  } catch (error) {
+    res.status(500).json({ status: false });
   }
 });
 
 UserRouter.get("/logout", (req, res) => {
   res.clearCookie("token");
   return res.json({ status: true, message: "Logged out" });
-});
-
-UserRouter.get("/dashboard", verifyToken, (req, res) => {
-  res.json({ message: "Welcome to the dashboard" });
 });
 
 export default UserRouter;

@@ -7,7 +7,6 @@ const addproduct = async (req, res) => {
     try {
         const userId = req.user.userId || req.user._id;
 
-        // ✅ GATEKEEPER CHECK: Ensure the local's profile is approved first
         const userProfile = await Profile.findOne({ user: userId });
         if (!userProfile || userProfile.verification_status !== "approved") {
             return res.status(403).json({
@@ -15,17 +14,15 @@ const addproduct = async (req, res) => {
             });
         }
 
-        const { product_name, description, price } = req.body;
+        // ✅ ADDED: Capture cultural story, stock, and category
+        const { product_name, description, price, culturalStory, stock, category } = req.body;
 
-        // Since we used upload.single("avatar") in the route, req.file works perfectly here!
         const avatarlocalPath = req.file?.path;
-
         if (!avatarlocalPath) {
             return res.status(400).json({ error: "Product image is required" });
         }
 
         const product_image = await uploadonCloudinary(avatarlocalPath);
-
         if (!product_image) {
             return res.status(400).json({ error: "Product image upload failed" });
         }
@@ -33,10 +30,13 @@ const addproduct = async (req, res) => {
         const newProduct = new Product({
             product_name,
             description,
+            culturalStory: culturalStory || "Handcrafted by local artisans.", // ✅ Added
             price,
-            avatar: product_image.secure_url, // ✅ Changed to secure_url
-            createdBy: userId
-            // verified defaults to false automatically based on your model!
+            stock: parseInt(stock) || 1, // ✅ Added for inventory logic
+            category: category || "Other", // ✅ Added for filtering
+            images: [product_image.secure_url], // ✅ Correct: saves to the 'images' array
+            createdBy: userId,
+            verified: false // explicitly ensuring it's false on creation
         });
 
         const savedproduct = await newProduct.save();
@@ -50,29 +50,29 @@ const addproduct = async (req, res) => {
         return res.status(500).json({ error: "Product listing failed" });
     }
 };
-
 const updateproduct = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.userId || req.user._id;
     try {
         const product = await Product.findById(id);
-        if (!product) {
-            return res.status(404).json({ error: "Product not found" });
-        }
-        // ✅ Ownership check: only the creator can update
+        if (!product) return res.status(404).json({ error: "Product not found" });
+
         if (product.createdBy.toString() !== userId.toString()) {
-            return res.status(403).json({ error: "You are not authorized to update this product" });
+            return res.status(403).json({ error: "Unauthorized update" });
         }
-        const { product_name, description, price } = req.body;
+
+        // ✅ IMPORTANT: Reset verification on any update
         const updatedData = {
-            product_name: product_name || product.product_name,
-            description: description || product.description,
-            price: price || product.price
+            ...req.body,
+            status: "pending",
+            verified: false,
+            rejected: false,
+            adminFeedback: "" // Clear old feedback on resubmission
         };
+
         const updated = await Product.findByIdAndUpdate(id, updatedData, { new: true });
-        res.status(200).json({ message: "Product updated successfully", product: updated });
+        res.status(200).json({ message: "Product updated and sent for re-verification", product: updated });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Product update failed" });
     }
 };

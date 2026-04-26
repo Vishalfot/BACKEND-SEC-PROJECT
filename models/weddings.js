@@ -1,217 +1,79 @@
-// import mongoose from "mongoose";
-// const WeddingSchema=new mongoose.Schema({
-//     wedding_venue:{
-//         type:String,
-//         required:true,
-//     },
-//     description:{
-//         type:String,
-//         required:true
-//     },
-//     location:{
-//         type:String,
-//     },
-//     time:{
-//         type:String
-//     },
-//     avatar:{
-//         type:String,
-//         required:true
-//     },
-//     long:{
-//         type:Number,
-//         required:true
-//     },
-//     latitude:{
-//         type:Number,
-//         required:true
-//     },
-//     date:{
-//         type:String,
-//         required:true
-//     },
-//     createdBy: {
-//         type: mongoose.Schema.Types.ObjectId,
-//         ref: "User",
-//         required: true
-//     }
-// })
-// const Weddingplace=mongoose.model("Weddingplace",WeddingSchema);
-// export {Weddingplace}
-
-// import mongoose from "mongoose";
-
-// const WeddingSchema = new mongoose.Schema({
-
-//   title: {
-//     type: String,
-//     required: true
-//   },
-
-//   description: String,
-
-//   place_ref: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: "Place",
-//     required: true
-//   },
-//   time:{
-//     type:String,
-//     required:true
-//   },
-//   date:{
-//     type:String,required:true
-//   },
-//   location: {
-//     type: {
-//       type: String,
-//       enum: ["Point"],
-//       default: "Point"
-//     },
-//     coordinates: {
-//       type: [Number],
-//       required: true
-//     }
-//   },
-
-//   host_user: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: "User",
-//     required: true
-//   },
-
-//   base_price: Number,
-
-//   capacity: Number,
-
-//   packages: [
-//     {
-//       title: String,
-//       price: Number, 
-//       description: String,
-//       images: [String]
-//     }
-//   ],
-
-//   amenities: [String],
-
-//   images: [
-//     {
-//       url: String,
-//       public_id: String
-//     }
-//   ],
-
-//   availability_calendar: [
-//     {
-//       date: Date,
-//       is_booked: Boolean
-//     }
-//   ],
-
-//   verified: {
-//     type: Boolean,
-//     default: false
-//   }
-
-// }, { timestamps: true });
-
-// WeddingSchema.index({ location: "2dsphere" });
-
-// export default mongoose.model("Weddingplace", WeddingSchema);
-
-// models/weddings.js - REPLACE YOUR CURRENT FILE WITH THIS
 import mongoose from "mongoose";
 
-const WeddingSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true
+const ProgramSchema = new mongoose.Schema({
+  name: { 
+    type: String, 
+    required: true, 
+    enum: ["Haldi", "Mehendi", "Sangeet", "Wedding", "Reception", "Other"] 
   },
-  
   description: String,
+  date: { type: Date, required: true },
+  start_time: { type: String, required: true },
+  end_time: { type: String, required: true },
+  price: { type: Number, required: true, default: 0 },
+  capacity: { type: Number, required: true },
+  tickets_sold: { type: Number, default: 0 },
+  images: [String]
+});
+
+const WeddingSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
   
-  place_ref: {
-    type: String,  // Matches Place._id (which is String)
-    ref: "Place",
-    required: true
-  },
-  
-  // ✅ REQUIRED FIELDS (were in your original but may be missing validation)
-  time: {
-    type: String,
-    required: true
-  },
-  
-  date: {
-    type: Date,
-    required: true
-  },
-  
-  // ✅ NEW FIELDS FOR DISTANCE CALCULATION
-  latitude: {
-    type: Number,
-    required: true
-  },
-  
-  longitude: {
-    type: Number,
-    required: true
-  },
-  
-  location: {
-    type: {
-      type: String,
-      enum: ["Point"],
-      default: "Point"
-    },
-    coordinates: {
-      type: [Number],  // [longitude, latitude]
-      required: true
-    }
-  },
-  
+  // The host or the family organizing it
   host_user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true
   },
-  
-  base_price: Number,
-  capacity: Number,
-  
-  packages: [
-    {
-      title: String,
-      price: Number,
-      description: String,
-      images: [String]
-    }
-  ],
-  
-  amenities: [String],
-  
-  images: [
-    {
-      url: String,
-      public_id: String
-    }
-  ],
-  
-  availability_calendar: [
-    {
-      date: Date,
-      is_booked: Boolean
-    }
-  ],
-  
-  verified: { type: Boolean, default: false }, rejected: { type: Boolean, default: false },
-  license_url: {
-    type: String,
-    required: true 
+
+  // Cultural authentication
+  cultural_background: String, // e.g., "Traditional Rajasthani Folk Wedding"
+
+  // NEW: Linked Place Reference
+  place_ref: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Place"
   },
+  
+  // Location Data
+  address: { type: String, required: true },
+  location: {
+    type: { type: String, enum: ["Point"], default: "Point" },
+    coordinates: { type: [Number], required: true } // [longitude, latitude]
+  },
+
+  // THE CORE IMPROVEMENT: Multi-day programs
+  programs: [ProgramSchema],
+
+  // Pricing for the "Full Experience" (Bundle discount)
+  full_package_price: { type: Number },
+  
+  amenities: [String], // e.g., "Traditional Food", "Turban Typing", "Henna"
+  
+  images: [{
+    url: String,
+    public_id: String
+  }],
+
+  // Verification & Admin (Unified Standard)
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+    index: true
+  },
+  adminFeedback: String,
+  verified: { type: Boolean, default: false },
+  rejected: { type: Boolean, default: false },
+  license_url: { type: String, required: true },
+
+  // Social Proof
+  averageRating: { type: Number, default: 0 },
+  numReviews: { type: Number, default: 0 }
+
 }, { timestamps: true });
 
 WeddingSchema.index({ location: "2dsphere" });
 
-export default mongoose.model("Weddingplace", WeddingSchema);
+export default mongoose.model("Wedding", WeddingSchema);

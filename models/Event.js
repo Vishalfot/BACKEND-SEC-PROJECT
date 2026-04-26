@@ -1,130 +1,4 @@
-// import mongoose from "mongoose";
-// const EventSchema=new mongoose.Schema({
-//     event_name:{
-//         type:String,
-//         required:true,
-//     },
-//     description:{
-//         type:String,
-//         required:true
-//     },
-//     date:{
-//         type:String,
-//         required:true
-//     },
-//     time:{
-//         type:String,
-//         required:true
-//     },
-//     location:{
-//         type:String,
-//         required:true
-//     },
-//     avatar:{
-//         type:String,
-//         required:true
-//     },
-//     createdBy: {
-//         type: mongoose.Schema.Types.ObjectId,
-//         ref: "User", 
-//         required: true
-//     }
-// })
-// const Event=mongoose.model("Event",EventSchema);
-// export {Event}
-// import mongoose from "mongoose";
 
-// const EventSchema = new mongoose.Schema({
-
-//   event_name: {
-//     type: String,
-//     required: true
-//   },
-
-//   description: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     required: true
-//   },
-
-//   // LINK TO PLACE
-//   place_ref: {
-//     type: String,
-//     ref: "Place",
-//     required: true
-//   },
-
-//   // GEO LOCATION (Important for Nearby Search)
-//   location: {
-//     type: {
-//       type: String,
-//       enum: ["Point"],
-//       default: "Point"
-//     },
-//     coordinates: {
-//       type: [Number],
-//       required: true
-//     }
-//   },
-
-//   event_date: {
-//     type: Date,
-//     required: true
-//   },
-
-//   start_time: {
-//     type: String,
-//     required: true
-//   },
-
-//   end_time: {
-//     type: String,
-//     required: true
-//   },
-
-//   avatar: String,
-
-//   cultural_weight: {
-//     type: Number,
-//     default: 0.7
-//   },
-//   experience_type: {
-//   type: String,
-//   enum: ["festival", "local_experience", "workshop", "heritage_walk"],
-//   required: true
-// },
-
-//   tags: [String],
-
-//   price: {
-//     type: Number,
-//     default: 0
-//   },
-
-//   capacity: Number,
-
-//   booking_required: {
-//     type: Boolean,
-//     default: false
-//   },
-
-//   createdBy: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: "User",
-//     required: true
-//   },
-
-//   verified: {
-//     type: Boolean,
-//     default: false
-//   }
-
-// }, { timestamps: true });
-
-// EventSchema.index({ location: "2dsphere" });
-
-// export default mongoose.model("Event", EventSchema);
-
-// models/Event.js - REPLACE YOUR CURRENT FILE WITH THIS
 import mongoose from "mongoose";
 
 const EventSchema = new mongoose.Schema({
@@ -185,6 +59,12 @@ const EventSchema = new mongoose.Schema({
     enum: ["festival", "local_experience", "workshop", "heritage_walk"],
     required: true
   },
+  
+  category: {
+    type: String,
+    enum: ['Food', 'Dance', 'Music', 'Craft', 'Other'],
+    default: 'Other'
+  },
 
   tags: [String],
   
@@ -192,9 +72,6 @@ const EventSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
-  capacity: Number,
-  
   booking_required: {
     type: Boolean,
     default: false
@@ -206,11 +83,42 @@ const EventSchema = new mongoose.Schema({
     required: true
   },
   
-  verified: { type: Boolean, default: false }, rejected: { type: Boolean, default: false },
-  license_url: {
+  // Verification workflow (Unified Standard)
+  verificationStatus: {
     type: String,
-    required: true
-  }
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+    index: true
+  },
+  adminFeedback: { type: String },
+  verified: { type: Boolean, default: false }, 
+  rejected: { type: Boolean, default: false },
+
+  license_url: { type: String, required: true },
+  tickets_sold: { type: Number, default: 0 },
+  averageRating: { type: Number, default: 0 },
+  numReviews: { type: Number, default: 0 },
+  organizer_name: { type: String, required: true },
+
+  // Event State (different from verification)
+  status: {
+    type: String,
+    enum: ["upcoming", "ongoing", "completed", "cancelled"],
+    default: "upcoming"
+  },
+  capacity: {
+    type: Number,
+    required: true // Now required to manage booking
+  },
+  max_tickets_per_person: {
+    type: Number,
+    default: 5 // Limits how many tickets one user can buy
+  },
+  ticket_status: {
+    type: String,
+    enum: ["available", "filling_fast", "sold_out"],
+    default: "available"
+  },
 }, { timestamps: true });
 
 EventSchema.index({ location: "2dsphere" });

@@ -1,20 +1,24 @@
-// middleware/isAdmin.js
-import User from "../models/User.js"; // Adjust path if needed
+import User from "../models/User.js";
 
 const isAdmin = async (req, res, next) => {
     try {
+        // req.user comes from your previous isAuth middleware
         const userId = req.user.userId || req.user._id;
-        const user = await User.findById(userId);
 
-        // Assuming your User model has a role field. 
-        // If not, you need to add `role: { type: String, enum: ['user', 'admin'], default: 'user' }` to User.js
+        // Use .select('role') to only fetch the necessary field from DB
+        const user = await User.findById(userId).select("role");
+
         if (!user || user.role !== "admin") {
-            return res.status(403).json({ message: "Access Denied. Admin resources only." });
+            return res.status(403).json({
+                success: false,
+                message: "Access Denied. Admin resources only."
+            });
         }
-        
+
         next();
     } catch (error) {
-        res.status(500).json({ message: "Admin verification failed." });
+        console.error("Admin verification failed:", error);
+        res.status(500).json({ success: false, message: "Admin verification failed: " + error.message });
     }
 };
 

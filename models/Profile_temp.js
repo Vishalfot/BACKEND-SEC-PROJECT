@@ -5,11 +5,11 @@ const profileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
-    unique: true // One user = One profile
+    unique: true
   },
   role: {
     type: String,
-    enum: ["tourist", "local", "Shopper"],
+    enum: ["Tourist", "Local", "Shopper"], // Matched to User model exactly
     required: true
   },
   verification_status: {
@@ -17,20 +17,22 @@ const profileSchema = new mongoose.Schema({
     enum: ["not_required", "pending", "approved", "rejected"],
     default: "not_required"
   },
-  // Common Fields
-  name: { type: String },
+  name: { type: String, trim: true },
   about: { type: String },
-  avatar: { type: String }, // Default placeholder
+  avatar: { type: String },
 
-  // Tourist Specific
+  // Tourist & Shopper Specific
   country: { type: String },
-  interests: { type: String }, // Can be comma separated string like "Art, Food, History"
+  interests: { type: [String] }, // Changed to Array for better filtering/Discovery Engine
 
   // Local Specific
   city: { type: String },
-  experience: { type: Number }, // Years of experience
+  experience: { type: Number },
   contact: { type: String },
-  id_document: { type: String }
-});
+  id_document: { type: String },
+
+  // Shopper Specific
+  preferredCategories: { type: [String] } // e.g., ["Handicrafts", "Textiles"]
+}, { timestamps: true });
 
 export const Profile = mongoose.model("Profile", profileSchema);
